@@ -79,9 +79,19 @@ project(ZeroBraneStudio)
 
 # ------------------------------------------------------------------------------
 # Other settings
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 # ZeroBraneStudio has nothing to build, only some files to install
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
+
+# add the executable file to our project
+add_executable(zbstudio WIN32
+  ${CMAKE_CURRENT_SOURCE_DIR}/build/olp_starter.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/zbstudio/res/zbstudio_olp.rc
+)
+target_include_directories(zbstudio PRIVATE ${LIBLUA_INCLUDEDIR})
+target_compile_options(zbstudio PRIVATE /D_WINDLL /D_WIN32 /D_CRT_SECURE_NO_WARNINGS)
+target_link_options(zbstudio PRIVATE /SUBSYSTEM:WINDOWS /LIBPATH:${LIBLUA_LIBDIR} liblua.lib
+  shlwapi.lib Pathcch.lib ws2_32.lib)
 
 # ------------------------------------------------------------------------------
 # Setup GNU-alike installatin directories
@@ -100,11 +110,14 @@ set(INSTALL_APPDIR
 
 # ------------------------------------------------------------------------------
 # Install ZeroBraneStudio files and docs
+install(
+  TARGETS zbstudio
+  RUNTIME DESTINATION ${INSTALL_APPDIR}
+)
 install(FILES
   CHANGELOG.md
   README.md
   CONTRIBUTING.md
-  ZeroBraneStudio.bat
   LICENSE
   DESTINATION ${INSTALL_APPDIR}
 )
@@ -140,17 +153,3 @@ install(FILES
   zbstudio/config.lua
   DESTINATION ${INSTALL_APPDIR}/zbstudio
 )
-#install(DIRECTORY lualibs/coxpcall DESTINATION ${INSTALL_APPDIR}/lualibs)
-#install(DIRECTORY lualibs/momdebug DESTINATION ${INSTALL_APPDIR}/lualibs)
-
-# if(WIN32)
-#   # *.bat-launcher for Windows
-#   install(FILES bin/luacheck.bat DESTINATION ${INSTALL_BINDIR})
-# endif()
-# install(DIRECTORY src/ DESTINATION ${INSTALL_TOP_LDIR}
-#   FILES_MATCHING PATTERN "*.lua"
-# )
-# install(DIRECTORY doc-html/ DESTINATION ${INSTALL_DOCDIR})
-
-
-# "/" omits leading dir
