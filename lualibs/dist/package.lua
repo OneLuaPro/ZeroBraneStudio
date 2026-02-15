@@ -254,8 +254,8 @@ function build_pkg(src_dir, deploy_dir, variables)
         if sys.exists(install_mf) then
             mf, err = io.open(install_mf, "r")
             if not mf then return nil, "Error when opening the CMake installation manifest '" .. install_mf .. "': " .. err end
-            for line in mf:lines() do
-                line = sys.check_separators(line)
+            for ln in mf:lines() do
+                local line = sys.check_separators(ln)
                 local file = line:gsub(utils.escape_magic(deploy_dir .. sys.path_separator()), "")
                 table.insert(component_files, file)
             end

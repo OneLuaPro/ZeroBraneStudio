@@ -102,12 +102,13 @@ function FileSysGetRecursive(path, recursive, spec, opts)
     if spect == nil or spect == "*" or spect == "*.*" then return {}, 0 end
     -- accept "*.lua" and "*.txt,*.wlua" combinations
     local masknum, list = 0, list or {}
-    for spec, specopt in pairs(type(spect) == 'table' and spect or {spect}) do
+    for sc, specopt in pairs(type(spect) == 'table' and spect or {spect}) do
+      local spec = sc
       -- specs can be kept as `{[spec] = true}` or `{spec}`, so handle both cases
       if type(spec) == "number" then spec = specopt end
       if specopt == false then spec = "" end -- skip keys with `false` values
-      for m in spec:gmatch("[^%s;,]+") do
-        m = m:gsub("[\\/]", sep)
+      for match in spec:gmatch("[^%s;,]+") do
+        local m = match:gsub("[\\/]", sep)
         if m:find("^%*%.%w+"..sep.."?$") then
           list[m:sub(2)] = true
         else

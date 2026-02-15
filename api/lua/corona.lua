@@ -4353,7 +4353,8 @@ end
 local function specialType(r) return '_'..r end
 
 local function processApiDir(root, kind, item)
-  for entity in lfs.dir(root) do
+  for ent in lfs.dir(root) do
+    local entity = ent
     if entity:sub(1, 1) ~= '.' then
       local fullPath = root .. DIR_SEP .. entity
       local mode = lfs.attributes(fullPath, 'mode')

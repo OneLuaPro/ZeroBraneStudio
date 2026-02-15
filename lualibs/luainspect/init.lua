@@ -1131,8 +1131,8 @@ function M.inspect(top_ast, tokenlist, src, report)
 
   local function eval_name_helper(name)
     local var = _G
-    for part in (name .. '.'):gmatch("([^.]*)%.") do
-      part = part:gsub('%%(.)', unescape)
+    for pt in (name .. '.'):gmatch("([^.]*)%.") do
+      local part = pt:gsub('%%(.)', unescape)
       if type(var) ~= 'table' and type(var) ~= 'userdata' then return nil end  --TODO:improve?
       var = var[part]
       if var == nil then return nil end

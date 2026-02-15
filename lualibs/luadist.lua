@@ -611,8 +611,8 @@ Usage: luadist [TEST_DIRECTORY] selftest [-VARIABLES...]
             -- run the tests
             print("\nRunning tests:")
             print("==============")
-            for test_file in sys.get_directory(test_dir) do
-                test_file = sys.make_path(test_dir, test_file)
+            for test_name in sys.get_directory(test_dir) do
+                local test_file = sys.make_path(test_dir, test_name)
                 if sys.is_file(test_file) then
                     print()
                     print(sys.extract_name(test_file) .. ":")

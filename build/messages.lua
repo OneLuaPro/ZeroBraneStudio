@@ -55,18 +55,18 @@ end
 local file = ... -- pass an existing file name as a parameter
 local messages = {}
 for _, mask in ipairs({"src/main.lua", "src/editor/*.lua"}) do
-  for _, file in ipairs(FileSysGet(mask, wx.wxFILE)) do
-    local content = FileRead(file)
-    for msg in content:gmatch("[^%w]TR(%b())") do
+  for _, f in ipairs(FileSysGet(mask, wx.wxFILE)) do
+    local content = FileRead(f)
+    for m in content:gmatch("[^%w]TR(%b())") do
       -- remove brackets aroung ("foo")
       -- extract message from ("foo", count)
-      msg = msg:gsub("^%(", ""):gsub("%)$", ""):gsub([[(["']), .+]], "%1")
+      local msg = m:gsub("^%(", ""):gsub("%)$", ""):gsub([[(["']), .+]], "%1")
       if not msg:find([=[^["']]=]) or not msg:find([=[["']$]=]) then
         io.stderr:write(("Call with a non-string 'TR(%s)' ignored in '%s'.\n")
-          :format(msg, file))
+          :format(msg, f))
       else
         messages[msg] = messages[msg] or {}
-        messages[msg][file] = (messages[msg][file] or 0) + 1
+        messages[msg][f] = (messages[msg][f] or 0) + 1
       end
     end
   end
