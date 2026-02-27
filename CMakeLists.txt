@@ -83,15 +83,27 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # ZeroBraneStudio has nothing to build, only some files to install
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
+# User option (Default: OFF for Windows 7 compatibility)
+option(USE_PATHCCH "Use modern PathCch Library (requires Windows 8+)" OFF)
+
 # add the executable file to our project
 add_executable(zbstudio WIN32
   ${CMAKE_CURRENT_SOURCE_DIR}/build/olp_starter.c
   ${CMAKE_CURRENT_SOURCE_DIR}/zbstudio/res/zbstudio_olp.rc
 )
 target_include_directories(zbstudio PRIVATE ${LIBLUA_INCLUDEDIR})
-target_compile_options(zbstudio PRIVATE /D_WINDLL /D_WIN32 /D_CRT_SECURE_NO_WARNINGS)
-target_link_options(zbstudio PRIVATE /SUBSYSTEM:WINDOWS /LIBPATH:${LIBLUA_LIBDIR} liblua.lib
-  shlwapi.lib Pathcch.lib ws2_32.lib)
+target_compile_definitions(zbstudio PRIVATE 
+  _WINDLL _WIN32 _CRT_SECURE_NO_WARNINGS
+)
+target_link_directories(zbstudio PRIVATE ${LIBLUA_LIBDIR})
+if(USE_PATHCCH)
+  # pathcch requires Windows 8 and upwards
+  target_compile_definitions(zbstudio PRIVATE USE_PATHCCH)
+  target_link_libraries(zbstudio PRIVATE liblua pathcch ws2_32)
+else()
+  # Shlwapi is for Windows 7 upwards compatible
+  target_link_libraries(zbstudio PRIVATE liblua shlwapi ws2_32)
+endif()
 
 # ------------------------------------------------------------------------------
 # Setup GNU-alike installatin directories

@@ -38,7 +38,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <shlwapi.h>
+
+#ifdef USE_PATHCCH
+// newer, but incompatible with Win7 due to missing api-ms-win-core-path-l1-1-0.dll
 #include <pathcch.h>
+#define MAX_PATH_BUFFER PATHCCH_MAX_CCH
+#else
+// older, but compatible with Win7
+#include <shlwapi.h>
+#define MAX_PATH_BUFFER 32768 // same as PATHCCH_MAX_CCH
+#endif
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -96,7 +105,7 @@ PCHAR* CommandLineToArgv(PCHAR CmdLine,int* _argc)
   i = 0;
   j = 0;
 
-  while( a = CmdLine[i] ) {
+  while( (a = CmdLine[i]) ) {
     if(in_QM) {
       if(a == '\"') {
         in_QM = 0;
@@ -159,11 +168,9 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLi
   int argc;
   char ** argv = CommandLineToArgv(WideCharToUTF8(GetCommandLineW()),&argc);
 
-  WCHAR buffer[MAX_PATH];
-  WCHAR buf2[MAX_PATH];
-  LPTSTR path2 = (LPTSTR)GlobalAlloc(GMEM_FIXED, (MAX_PATH+1)*sizeof(WCHAR));
-
-  LPWSTR path = (LPWSTR)GlobalAlloc(GMEM_FIXED, (MAX_PATH+1)*sizeof(WCHAR));
+  static WCHAR buffer[MAX_PATH_BUFFER];
+  static WCHAR buf2[MAX_PATH_BUFFER];
+  LPWSTR path = (LPWSTR)GlobalAlloc(GMEM_FIXED, (MAX_PATH_BUFFER+1)*sizeof(WCHAR));
 
   // Enable console output although in /SUBSYSTEM:WINDOWS and not in /SUBSYSTEM:CONSOLE
   // https://speedyleion.github.io/c/c++/windows/2021/07/11/WinMain-and-stdout.html
@@ -174,7 +181,7 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLi
     }
   }
 
-  if (GetCurrentDirectoryW(MAX_PATH, path) == 0) {
+  if (GetCurrentDirectoryW(MAX_PATH_BUFFER, path) == 0) {
     MessageBox(NULL,
 	       TEXT("Couldn't find the current working directory"),
 	       TEXT("Failed to start editor"),
@@ -182,20 +189,27 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLi
     return 0;
   }
 
-  if (!GetModuleFileNameW(NULL, buffer, MAX_PATH)) {
+  if (!GetModuleFileNameW(NULL, buffer, MAX_PATH_BUFFER)) {
     MessageBox(NULL,
 	       TEXT("Couldn't find the executable path"),
 	       TEXT("Failed to start editor"),
 	       MB_OK|MB_ICONERROR);
     return 0;
   }
-  PathCchRemoveFileSpec(buffer,MAX_PATH);
+#ifdef USE_PATHCCH
+  PathCchRemoveFileSpec(buffer,MAX_PATH_BUFFER);
   SetCurrentDirectoryW(buffer);
   // remove /opt/ZeroBraneStudio from path in buffer...
-  PathCchRemoveFileSpec(buffer,MAX_PATH);
-  PathCchRemoveFileSpec(buffer,MAX_PATH);
+  PathCchRemoveFileSpec(buffer,MAX_PATH_BUFFER);
+  PathCchRemoveFileSpec(buffer,MAX_PATH_BUFFER);
   // ... to yield OneLuaPro (variable) base install directory
   // printf("Base path in buffer = %ls\n",buffer);
+#else
+  PathRemoveFileSpecW(buffer);
+  SetCurrentDirectoryW(buffer);
+  PathRemoveFileSpecW(buffer);
+  PathRemoveFileSpecW(buffer);
+#endif
   
   // OK, I don't do any error checking here, which COULD
   // lead to bugs that are hard to find, but considered the simplicity
@@ -249,6 +263,7 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLi
 		 TEXT("Failed to start editor"),
 		 MB_OK|MB_ICONERROR);
     lua_close(L);
+    GlobalFree(path);
   }
   else {
     MessageBox(NULL,
