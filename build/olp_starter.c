@@ -163,8 +163,47 @@ PCHAR WideCharToUTF8(LPCWSTR text) {
   return buffer;
 }
 
+static void SetupDeterministicDllResolution(){
+  /* DETERMINISTIC DLL RESOLUTION FOR ONELUAPRO:
+   * To keep the '/bin' directory clean, we do not load 'lua.dll' from there.
+   * Instead, we redirect the search to 'lib/lua/<MAJOR>.<MINOR>/'.
+   *
+   * IMPORTANT ARCHITECTURAL NOTE:
+   * This requires the executable to be linked with the '/DELAYLOAD:lua.dll'
+   * linker option and against 'delayimp.lib'.
+   * Delay-loading ensures that the process starts FIRST, allowing this
+   * code to set the custom search path BEFORE the OS tries to find the DLL.
+   *
+   * This guarantees that the interpreter and all DLL-plugins share the exact
+   * same DLL instance, which is e.g. critical for thread-pool stability. */
+  wchar_t exePath[MAX_PATH_BUFFER];
+  if (GetModuleFileNameW(NULL, exePath, MAX_PATH_BUFFER) > 0) {
+    wchar_t *lastSlash = wcsrchr(exePath, L'\\');
+    if (lastSlash) {
+      /* Strip executable name (e.g., 'lua.exe') to get the base '/bin' folder */
+      *lastSlash = L'\0';
+      /* Construct the relative path to the versioned library folder.
+       * The LUAI_TOWSTR macros inject the version numbers from 'lua.h' at
+       * compile time. */
+      wchar_t dllDir[MAX_PATH_BUFFER];
+      _snwprintf(dllDir, MAX_PATH_BUFFER,
+		 L"%s\\..\\lib\\lua\\"
+		 LUAI_TOWSTR(LUA_VERSION_MAJOR_N)
+		 L"."
+		 LUAI_TOWSTR(LUA_VERSION_MINOR_N),exePath);
+      /* Inject custom search path at the top of the DLL search order.
+       * Since lua.dll is delay-loaded, it will be successfully
+       * found in the version-specific sub-directory. */
+      SetDllDirectoryW(dllDir);
+    }
+  }
+}
+
 int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLine, int nCmdShow)
 {
+  // Modity DLL search path
+  SetupDeterministicDllResolution();
+
   int argc;
   char ** argv = CommandLineToArgv(WideCharToUTF8(GetCommandLineW()),&argc);
 
@@ -176,8 +215,9 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance,  LPSTR lpCmdLi
   // https://speedyleion.github.io/c/c++/windows/2021/07/11/WinMain-and-stdout.html
   if(!GetStdHandle(STD_OUTPUT_HANDLE)){
     if(AttachConsole(ATTACH_PARENT_PROCESS)){
-      freopen("CONOUT$","wb",stdout);
-      freopen("CONOUT$","wb",stderr);
+      FILE* fp;
+      freopen_s(&fp, "CONOUT$","wb",stdout);
+      freopen_s(&fp, "CONOUT$","wb",stderr);
     }
   }
 

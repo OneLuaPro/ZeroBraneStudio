@@ -96,6 +96,12 @@ target_compile_definitions(zbstudio PRIVATE
   _WINDLL _WIN32 _CRT_SECURE_NO_WARNINGS
 )
 target_link_directories(zbstudio PRIVATE ${LIBLUA_LIBDIR})
+# Enable DELAYLOAD
+target_link_options(zbstudio PRIVATE
+  "LINKER:/DELAYLOAD:lua.dll"
+  "LINKER:/DEPENDENTLOADFLAG:0x0"
+)
+target_link_libraries(zbstudio PRIVATE delayimp.lib)
 if(USE_PATHCCH)
   # pathcch requires Windows 8 and upwards
   target_compile_definitions(zbstudio PRIVATE USE_PATHCCH)
