@@ -187,7 +187,7 @@ static void SetupDeterministicDllResolution(){
        * compile time. */
       wchar_t dllDir[MAX_PATH_BUFFER];
       _snwprintf(dllDir, MAX_PATH_BUFFER,
-		 L"%s\\..\\lib\\lua\\"
+		 L"%s\\..\\..\\lib\\lua\\"
 		 LUAI_TOWSTR(LUA_VERSION_MAJOR_N)
 		 L"."
 		 LUAI_TOWSTR(LUA_VERSION_MINOR_N),exePath);
